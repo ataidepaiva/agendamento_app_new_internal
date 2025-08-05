@@ -1,0 +1,82 @@
+{
+  "project_info": {
+    "project_number": "805720964005",
+    "project_id": "app-agendamento-veiculos",
+    "storage_bucket": "app-agendamento-veiculos.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:805720964005:android:0f7027b02b365d3e90464c",
+        "android_client_info": {
+          "package_name": "com.example.agendamento_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "805720964005-9153nvk2ntoi3bivukj8vnd6osh0r0m2.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCs8WiB3ZensIhnxurJCVrLBJCWdtNrBuY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "805720964005-9153nvk2ntoi3bivukj8vnd6osh0r0m2.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "805720964005-nnu4ekapl4sfephe57urqgjirit1qddp.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.agendamentoApp"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:805720964005:android:f32a4534b1e6822390464c",
+        "android_client_info": {
+          "package_name": "com.seemg.agendamento"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "805720964005-9153nvk2ntoi3bivukj8vnd6osh0r0m2.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCs8WiB3ZensIhnxurJCVrLBJCWdtNrBuY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "805720964005-9153nvk2ntoi3bivukj8vnd6osh0r0m2.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "805720964005-nnu4ekapl4sfephe57urqgjirit1qddp.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.agendamentoApp"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
