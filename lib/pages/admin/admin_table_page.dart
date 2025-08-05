@@ -311,7 +311,18 @@ class _AdminTablePageState extends State<AdminTablePage> {
                             width: 180,
                             child: TextField(
                               controller: entry.value,
-                              decoration: InputDecoration(labelText: entry.key, border: const OutlineInputBorder(), contentPadding: const EdgeInsets.symmetric(horizontal: 8)),
+                              decoration: InputDecoration(
+                                labelText: entry.key,
+                                border: const OutlineInputBorder(),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                                suffixIcon: IconButton(
+                                        icon: const Icon(Icons.clear),
+                                        onPressed: () {
+                                          entry.value.clear();
+                                          _applyFilters();
+                                        },
+                                      ),
+                              ),
                             ),
                           );
                         }).toList(),
