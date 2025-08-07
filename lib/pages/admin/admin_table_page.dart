@@ -1,6 +1,7 @@
-import 'dart:typed_data';
+import 'dart:io' show Platform;
+
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -33,15 +34,24 @@ class AgendamentoRow {
   // Helper to get a value by its column name (string key)
   dynamic get(String key) {
     switch (key) {
-      case 'Data Viagem': return dataViagem;
-      case 'Solicitante': return solicitante;
-      case 'Descrição': return descricao;
-      case 'Município': return municipio;
-      case 'Escolas': return escolas;
-      case 'Status': return status;
-      case 'Motorista': return motorista;
-      case 'Veículo': return veiculo;
-      default: return '';
+      case 'Data Viagem':
+        return dataViagem;
+      case 'Solicitante':
+        return solicitante;
+      case 'Descrição':
+        return descricao;
+      case 'Município':
+        return municipio;
+      case 'Escolas':
+        return escolas;
+      case 'Status':
+        return status;
+      case 'Motorista':
+        return motorista;
+      case 'Veículo':
+        return veiculo;
+      default:
+        return '';
     }
   }
 }
@@ -77,8 +87,18 @@ class _AdminTablePageState extends State<AdminTablePage> {
 
   // Constants
   final List<String> _months = [
-    'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+    'Janeiro',
+    'Fevereiro',
+    'Março',
+    'Abril',
+    'Maio',
+    'Junho',
+    'Julho',
+    'Agosto',
+    'Setembro',
+    'Outubro',
+    'Novembro',
+    'Dezembro',
   ];
   late final List<int> _years;
 
@@ -86,7 +106,9 @@ class _AdminTablePageState extends State<AdminTablePage> {
   void initState() {
     super.initState();
     _years = List<int>.generate(10, (i) => DateTime.now().year - 5 + i);
-    _filterControllers.forEach((_, controller) => controller.addListener(_applyFilters));
+    _filterControllers.forEach(
+      (_, controller) => controller.addListener(_applyFilters),
+    );
     _loadAllData();
   }
 
@@ -104,21 +126,47 @@ class _AdminTablePageState extends State<AdminTablePage> {
     });
 
     try {
-      final results = await Future.wait([
-        FirebaseFirestore.instance.collection('agendamentos').orderBy('dataViagem', descending: true).get(),
-        FirebaseFirestore.instance.collection('usuarios').get(),
-        FirebaseFirestore.instance.collection('motoristas').get(),
-        FirebaseFirestore.instance.collection('veiculos').get(),
-      ]);
+      List<QuerySnapshot> results;
+
+      if (!kIsWeb && Platform.isWindows) {
+        // Windows: Carrega todas as coleções
+        results = await Future.wait([
+          FirebaseFirestore.instance.collection('agendamentos').get(),
+          FirebaseFirestore.instance.collection('usuarios').get(),
+          FirebaseFirestore.instance.collection('motoristas').get(),
+          FirebaseFirestore.instance.collection('veiculos').get(),
+          // Adicione outras coleções aqui, se necessário
+        ]);
+      } else {
+        // Outras plataformas: Carrega apenas a coleção de agendamentos
+        results = await Future.wait([
+          FirebaseFirestore.instance
+              .collection('agendamentos')
+              .orderBy('dataViagem', descending: true)
+              .get(),
+          FirebaseFirestore.instance.collection('usuarios').get(),
+          FirebaseFirestore.instance.collection('motoristas').get(),
+          FirebaseFirestore.instance.collection('veiculos').get(),
+        ]);
+      }
 
       final agendamentosSnap = results[0] as QuerySnapshot;
       final usuariosSnap = results[1] as QuerySnapshot;
       final motoristasSnap = results[2] as QuerySnapshot;
       final veiculosSnap = results[3] as QuerySnapshot;
 
-      final usuariosMap = {for (var doc in usuariosSnap.docs) doc.id: doc.data() as Map<String, dynamic>};
-      final motoristasMap = {for (var doc in motoristasSnap.docs) doc.id: doc.data() as Map<String, dynamic>};
-      final veiculosMap = {for (var doc in veiculosSnap.docs) doc.id: doc.data() as Map<String, dynamic>};
+      final usuariosMap = {
+        for (var doc in usuariosSnap.docs)
+          doc.id: doc.data() as Map<String, dynamic>,
+      };
+      final motoristasMap = {
+        for (var doc in motoristasSnap.docs)
+          doc.id: doc.data() as Map<String, dynamic>,
+      };
+      final veiculosMap = {
+        for (var doc in veiculosSnap.docs)
+          doc.id: doc.data() as Map<String, dynamic>,
+      };
 
       List<AgendamentoRow> allRows = [];
       for (var doc in agendamentosSnap.docs) {
@@ -127,19 +175,26 @@ class _AdminTablePageState extends State<AdminTablePage> {
         final motorista = motoristasMap[data['motoristaId']];
         final veiculo = veiculosMap[data['veiculoId']];
         final locais = data['locais'] as List?;
-        final municipioDestino = (locais?.isNotEmpty ?? false) ? locais!.last['municipio'] : 'N/A';
-        final escolasDestino = (locais?.isNotEmpty ?? false) && locais!.last['escolas'] != null ? (locais.last['escolas'] as List).join(', ') : 'N/A';
+        final municipioDestino = (locais?.isNotEmpty ?? false)
+            ? locais!.last['municipio']
+            : 'N/A';
+        final escolasDestino =
+            (locais?.isNotEmpty ?? false) && locais!.last['escolas'] != null
+            ? (locais.last['escolas'] as List).join(', ')
+            : 'N/A';
 
-        allRows.add(AgendamentoRow(
-          dataViagem: data['dataViagem'] as Timestamp?,
-          solicitante: solicitante?['nome'] ?? 'N/A',
-          descricao: data['descricao'] ?? 'N/A',
-          municipio: municipioDestino,
-          escolas: escolasDestino,
-          status: data['status'] ?? 'N/A',
-          motorista: motorista?['nome'] ?? 'N/A',
-          veiculo: veiculo?['modelo'] ?? 'N/A',
-        ));
+        allRows.add(
+          AgendamentoRow(
+            dataViagem: data['dataViagem'] as Timestamp?,
+            solicitante: solicitante?['nome'] ?? 'N/A',
+            descricao: data['descricao'] ?? 'N/A',
+            municipio: municipioDestino,
+            escolas: escolasDestino,
+            status: data['status'] ?? 'N/A',
+            motorista: motorista?['nome'] ?? 'N/A',
+            veiculo: veiculo?['modelo'] ?? 'N/A',
+          ),
+        );
       }
 
       if (mounted) {
@@ -163,10 +218,16 @@ class _AdminTablePageState extends State<AdminTablePage> {
     List<AgendamentoRow> filteredList = List.from(_allRows);
 
     if (_selectedYear != null) {
-      filteredList.retainWhere((row) => row.dataViagem?.toDate().year == _selectedYear);
+      filteredList.retainWhere(
+        (row) => row.dataViagem?.toDate().year == _selectedYear,
+      );
     }
     if (_selectedMonth != null) {
-      filteredList.retainWhere((row) => row.dataViagem?.toDate().month == (_months.indexOf(_selectedMonth!) + 1));
+      filteredList.retainWhere(
+        (row) =>
+            row.dataViagem?.toDate().month ==
+            (_months.indexOf(_selectedMonth!) + 1),
+      );
     }
 
     _filterControllers.forEach((key, controller) {
@@ -175,7 +236,9 @@ class _AdminTablePageState extends State<AdminTablePage> {
         filteredList.retainWhere((row) {
           dynamic value = row.get(key);
           if (key == 'Data Viagem' && value is Timestamp) {
-            return DateFormat('dd/MM/yyyy').format(value.toDate()).toLowerCase().contains(filterText);
+            return DateFormat(
+              'dd/MM/yyyy',
+            ).format(value.toDate()).toLowerCase().contains(filterText);
           }
           return value.toString().toLowerCase().contains(filterText);
         });
@@ -191,61 +254,116 @@ class _AdminTablePageState extends State<AdminTablePage> {
 
   Future<void> _exportToPdf() async {
     if (_filteredRows.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Não há dados para exportar.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Não há dados para exportar.')),
+      );
       return;
     }
     setState(() => _isExporting = true);
 
     final pdf = pw.Document();
-    final Uint8List logoBytes = (await rootBundle.load('assets/images/logo.jpg')).buffer.asUint8List();
+    final Uint8List logoBytes = (await rootBundle.load(
+      'assets/images/logo.png',
+    ))
+        .buffer
+        .asUint8List();
     final logo = pw.MemoryImage(logoBytes);
+
+    final String formattedDate =
+        DateFormat("dd/MM/yyyy 'as' HH:mm:ss").format(DateTime.now());
 
     String filterDescription = 'Filtros Aplicados: ';
     List<String> activeFilters = [];
-    if (_selectedMonth != null) activeFilters.add('Mês: $_selectedMonth');
-    if (_selectedYear != null) activeFilters.add('Ano: $_selectedYear');
+    if (_selectedMonth != null) {
+      activeFilters.add('Mês: $_selectedMonth');
+    }
+    if (_selectedYear != null) {
+      activeFilters.add('Ano: $_selectedYear');
+    }
     _filterControllers.forEach((key, controller) {
-      if (controller.text.isNotEmpty) activeFilters.add('$key: ${controller.text}');
+      if (controller.text.isNotEmpty) {
+        activeFilters.add('$key: ${controller.text}');
+      }
     });
-    filterDescription += activeFilters.isNotEmpty ? activeFilters.join(', ') : 'Geral';
+    filterDescription +=
+        activeFilters.isNotEmpty ? activeFilters.join(', ') : 'Geral';
 
     final tableData = _filteredRows.map((row) {
-        return _filterControllers.keys.map((key) {
-            dynamic value = row.get(key);
-            if (key == 'Data Viagem' && value is Timestamp) {
-                return DateFormat('dd/MM/yyyy').format(value.toDate());
-            }
-            return value?.toString() ?? 'N/A';
-        }).toList();
+      return _filterControllers.keys.map((key) {
+        dynamic value = row.get(key);
+        if (key == 'Data Viagem' && value is Timestamp) {
+          return DateFormat('dd/MM/yyyy').format(value.toDate());
+        }
+        return value?.toString() ?? 'N/A';
+      }).toList();
     }).toList();
 
-    pdf.addPage(pw.MultiPage(
-      pageFormat: PdfPageFormat.a4.landscape,
-      header: (context) => pw.Column(children: [
-        pw.Row(crossAxisAlignment: pw.CrossAxisAlignment.center, children: [
-          pw.SizedBox(height: 60, width: 60, child: pw.Image(logo)),
-          pw.SizedBox(width: 20),
-          pw.Expanded(child: pw.Text('Sistema Corporativo de Agendamento de Veículos - SRE de Varginha', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 14), textAlign: pw.TextAlign.center)),
-        ]),
-        pw.Divider(height: 20),
-        pw.Text('Relatório de Agendamento de Veículos', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 18)),
-        pw.SizedBox(height: 5),
-        pw.Text(filterDescription, style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700)),
-        pw.SizedBox(height: 15),
-      ]),
-      build: (context) => [pw.Table.fromTextArray(
-        headers: _filterControllers.keys.toList(),
-        data: tableData,
-        headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
-        cellStyle: const pw.TextStyle(fontSize: 8),
-        border: pw.TableBorder.all(),
-        headerDecoration: const pw.BoxDecoration(color: PdfColors.grey300),
-        cellAlignments: { for (var i in Iterable.generate(8)) i : pw.Alignment.centerLeft },
-      )],
-    ));
+    pdf.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4.landscape,
+        header: (context) => pw.Column(
+          children: [
+            pw.Row(
+              crossAxisAlignment: pw.CrossAxisAlignment.center,
+              children: [
+                pw.SizedBox(height: 60, width: 60, child: pw.Image(logo)),
+                pw.SizedBox(width: 20),
+                pw.Expanded(
+                  child: pw.Text(
+                    'Sistema Corporativo de Agendamento de Veículos - SRE de Varginha',
+                    style: pw.TextStyle(
+                      fontWeight: pw.FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                    textAlign: pw.TextAlign.center,
+                  ),
+                ),
+              ],
+            ),
+            pw.SizedBox(height: 5),
+            pw.Align(
+              alignment: pw.Alignment.centerRight,
+              child: pw.Text(
+                'Relatório emitido em $formattedDate',
+                style: const pw.TextStyle(fontSize: 8),
+              ),
+            ),
+            pw.Divider(height: 20),
+            pw.Text(
+              'Relatório de Agendamento de Veículos',
+              style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 18),
+            ),
+            pw.SizedBox(height: 5),
+            pw.Text(
+              filterDescription,
+              style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700),
+            ),
+            pw.SizedBox(height: 15),
+          ],
+        ),
+        build: (context) => [
+          pw.TableHelper.fromTextArray(
+            headers: _filterControllers.keys.toList(),
+            data: tableData,
+            headerStyle: pw.TextStyle(
+              fontWeight: pw.FontWeight.bold,
+              fontSize: 9,
+            ),
+            cellStyle: const pw.TextStyle(fontSize: 8),
+            border: pw.TableBorder.all(),
+            headerDecoration: const pw.BoxDecoration(color: PdfColors.grey300),
+            cellAlignments: {
+              for (var i in Iterable.generate(8)) i: pw.Alignment.centerLeft,
+            },
+          ),
+        ],
+      ),
+    );
 
     await Printing.layoutPdf(onLayout: (format) async => pdf.save());
-    if(mounted) setState(() => _isExporting = false);
+    if (mounted) {
+      setState(() => _isExporting = false);
+    }
   }
 
   Widget _buildBody() {
@@ -253,17 +371,29 @@ class _AdminTablePageState extends State<AdminTablePage> {
       return const Center(child: CircularProgressIndicator());
     }
     if (_errorMessage != null) {
-      return Center(child: Padding(padding: const EdgeInsets.all(16.0), child: Text(_errorMessage!, style: const TextStyle(color: Colors.red))));
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Text(
+            _errorMessage!,
+            style: const TextStyle(color: Colors.red),
+          ),
+        ),
+      );
     }
     if (_allRows.isEmpty) {
-      return const Center(child: Text('Nenhum agendamento encontrado no banco de dados.'));
+      return const Center(
+        child: Text('Nenhum agendamento encontrado no banco de dados.'),
+      );
     }
     return SingleChildScrollView(
       scrollDirection: Axis.vertical,
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: DataTable(
-          columns: _filterControllers.keys.map((h) => DataColumn(label: Text(h))).toList(),
+          columns: _filterControllers.keys
+              .map((h) => DataColumn(label: Text(h)))
+              .toList(),
           rows: _filteredRows.map((rowData) {
             return DataRow(
               cells: _filterControllers.keys.map((key) {
@@ -285,8 +415,13 @@ class _AdminTablePageState extends State<AdminTablePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Tabela de Agendamentos'),
-        actions: [IconButton(icon: const Icon(Icons.picture_as_pdf), onPressed: _isExporting ? null : _exportToPdf)],
+        title: const Text(''),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.picture_as_pdf),
+            onPressed: _isExporting ? null : _exportToPdf,
+          ),
+        ],
       ),
       body: Stack(
         children: [
@@ -296,11 +431,73 @@ class _AdminTablePageState extends State<AdminTablePage> {
                 padding: const EdgeInsets.all(8.0),
                 child: Column(
                   children: [
-                    Row(children: [
-                      Expanded(child: DropdownButton<String>(isExpanded: true, hint: const Text('Mês'), value: _selectedMonth, onChanged: (v) { setState(() { _selectedMonth = v; _applyFilters(); }); }, items: _months.map((m) => DropdownMenuItem(value: m, child: Text(m))).toList())),
-                      const SizedBox(width: 10),
-                      Expanded(child: DropdownButton<int>(isExpanded: true, hint: const Text('Ano'), value: _selectedYear, onChanged: (v) { setState(() { _selectedYear = v; _applyFilters(); }); }, items: _years.map((y) => DropdownMenuItem(value: y, child: Text(y.toString()))).toList())),
-                    ]),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: DropdownButton<String>(
+                            isExpanded: true,
+                            hint: const Text('Mês'),
+                            value: _selectedMonth,
+                            onChanged: (v) {
+                              setState(() {
+                                _selectedMonth = v;
+                                _applyFilters();
+                              });
+                            },
+                            items: _months
+                                .map(
+                                  (m) => DropdownMenuItem(
+                                    value: m,
+                                    child: Text(m),
+                                  ),
+                                )
+                                .toList(),
+                          ),
+                        ),
+                        if (_selectedMonth != null)
+                          IconButton(
+                            icon: const Icon(Icons.clear),
+                            onPressed: () {
+                              setState(() {
+                                _selectedMonth = null;
+                                _applyFilters();
+                              });
+                            },
+                          ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: DropdownButton<int>(
+                            isExpanded: true,
+                            hint: const Text('Ano'),
+                            value: _selectedYear,
+                            onChanged: (v) {
+                              setState(() {
+                                _selectedYear = v;
+                                _applyFilters();
+                              });
+                            },
+                            items: _years
+                                .map(
+                                  (y) => DropdownMenuItem(
+                                    value: y,
+                                    child: Text(y.toString()),
+                                  ),
+                                )
+                                .toList(),
+                          ),
+                        ),
+                        if (_selectedYear != null)
+                          IconButton(
+                            icon: const Icon(Icons.clear),
+                            onPressed: () {
+                              setState(() {
+                                _selectedYear = null;
+                                _applyFilters();
+                              });
+                            },
+                          ),
+                      ],
+                    ),
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 8.0),
                       child: Wrap(
@@ -314,14 +511,16 @@ class _AdminTablePageState extends State<AdminTablePage> {
                               decoration: InputDecoration(
                                 labelText: entry.key,
                                 border: const OutlineInputBorder(),
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                ),
                                 suffixIcon: IconButton(
-                                        icon: const Icon(Icons.clear),
-                                        onPressed: () {
-                                          entry.value.clear();
-                                          _applyFilters();
-                                        },
-                                      ),
+                                  icon: const Icon(Icons.clear),
+                                  onPressed: () {
+                                    entry.value.clear();
+                                    _applyFilters();
+                                  },
+                                ),
                               ),
                             ),
                           );
@@ -336,8 +535,20 @@ class _AdminTablePageState extends State<AdminTablePage> {
           ),
           if (_isExporting)
             Container(
-              color: Colors.black.withOpacity(0.5),
-              child: const Center(child: Column(mainAxisSize: MainAxisSize.min, children: [CircularProgressIndicator(), SizedBox(height: 16), Text('Gerando PDF...', style: TextStyle(color: Colors.white, fontSize: 16))])),
+              color: Theme.of(context).colorScheme.shadow.withAlpha(128),
+              child: const Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 16),
+                    Text(
+                      'Gerando PDF...',
+                      style: TextStyle(color: Colors.white, fontSize: 16),
+                    ),
+                  ],
+                ),
+              ),
             ),
         ],
       ),

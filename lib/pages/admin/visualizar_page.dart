@@ -16,7 +16,7 @@ class _VisualizarPageState extends State<VisualizarPage> {
       length: 2, // Número de abas (Calendário e Gráficos)
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Visualizar'),
+          title: const Text(''),
           backgroundColor: Theme.of(context).colorScheme.primaryContainer,
           bottom: const TabBar(
             tabs: [
