@@ -150,10 +150,10 @@ class _AdminTablePageState extends State<AdminTablePage> {
         ]);
       }
 
-      final agendamentosSnap = results[0] as QuerySnapshot;
-      final usuariosSnap = results[1] as QuerySnapshot;
-      final motoristasSnap = results[2] as QuerySnapshot;
-      final veiculosSnap = results[3] as QuerySnapshot;
+      final agendamentosSnap = results[0];
+      final usuariosSnap = results[1];
+      final motoristasSnap = results[2];
+      final veiculosSnap = results[3];
 
       final usuariosMap = {
         for (var doc in usuariosSnap.docs)

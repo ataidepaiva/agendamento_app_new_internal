@@ -3,6 +3,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:agendamento_app/core/router/app_router.dart'; // Importando o arquivo de rotas
 import 'package:agendamento_app/firebase_options.dart'; // Certifique-se de que esse arquivo está correto
 import 'package:agendamento_app/core/theme/app_theme.dart'; // Importando o tema centralizado
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:syncfusion_localizations/syncfusion_localizations.dart';
 
 void main() async {
   // Inicialização do Flutter e Firebase
@@ -24,6 +26,16 @@ class MyApp extends StatelessWidget {
       title: 'Agendamento de Veículos', // Título do App
       debugShowCheckedModeBanner: false, // Desativa o banner de debug
       theme: appTheme, // Usando o tema centralizado
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        SfGlobalLocalizations.delegate
+      ],
+      supportedLocales: const [
+        Locale('pt', 'BR'),
+      ],
+      locale: const Locale('pt', 'BR'),
     );
   }
 }

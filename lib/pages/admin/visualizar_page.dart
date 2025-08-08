@@ -26,10 +26,7 @@ class _VisualizarPageState extends State<VisualizarPage> {
           ),
         ),
         body: const TabBarView(
-          children: [
-            GerenciarCalendarioPage(),
-            GraficosPage(),
-          ],
+          children: [GerenciarCalendarioPage(), GraficosPage()],
         ),
       ),
     );

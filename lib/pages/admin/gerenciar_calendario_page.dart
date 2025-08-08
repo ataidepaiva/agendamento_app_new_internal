@@ -26,12 +26,14 @@ class GerenciarCalendarioPageState extends State<GerenciarCalendarioPage> {
       snapshot,
     ) {
       final Map<DateTime, List<Map<String, dynamic>>> agendamentos = {};
+
       for (var doc in snapshot.docs) {
         final data = doc.data();
         final status = data['status']?.toLowerCase();
         if (status == 'confirmado' || status == 'concluido') {
           final dataViagemTimestamp = data['dataViagem'] as Timestamp?;
-          if (dataViagemTimestamp == null) continue; // Pula se dataViagem for nula
+          if (dataViagemTimestamp == null) continue;
+
           final dataViagem = dataViagemTimestamp.toDate();
           final diaUtc = DateTime.utc(
             dataViagem.year,
@@ -42,9 +44,11 @@ class GerenciarCalendarioPageState extends State<GerenciarCalendarioPage> {
           if (agendamentos[diaUtc] == null) {
             agendamentos[diaUtc] = [];
           }
-          agendamentos[diaUtc]!.add(data);
+
+          agendamentos[diaUtc]!.add({...data, 'id': doc.id});
         }
       }
+
       setState(() {
         _agendamentosPorDia = agendamentos;
       });
@@ -58,7 +62,9 @@ class GerenciarCalendarioPageState extends State<GerenciarCalendarioPage> {
 
   @override
   Widget build(BuildContext context) {
-    return TableCalendar(
+    return Scaffold(
+      appBar: AppBar(title: const Text('Calendário de Agendamentos')),
+      body: TableCalendar(
         firstDay: DateTime.utc(2024, 1, 1),
         lastDay: DateTime.utc(2026, 12, 31),
         focusedDay: _focusedDay,
@@ -70,30 +76,121 @@ class GerenciarCalendarioPageState extends State<GerenciarCalendarioPage> {
           });
         },
         eventLoader: _getAgendamentosParaDia,
+        calendarStyle: const CalendarStyle(outsideDaysVisible: false),
+        headerStyle: const HeaderStyle(
+          formatButtonVisible: false,
+          titleCentered: true,
+        ),
         calendarBuilders: CalendarBuilders(
-          markerBuilder: (context, day, events) {
-            if (events.isNotEmpty) {
-              return Positioned(
-                right: 1,
-                bottom: 1,
-                child: Container(
-                  padding: const EdgeInsets.all(2),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).primaryColor,
-                    shape: BoxShape.circle,
+          defaultBuilder: (context, day, focusedDay) {
+            final agendamentos = _getAgendamentosParaDia(day);
+
+            return Container(
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+              padding: const EdgeInsets.all(4),
+              alignment: Alignment.topLeft,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${day.day}',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
-                  constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
-                  child: Text(
-                    '${events.length}',
-                    style: const TextStyle(color: Colors.white, fontSize: 12),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              );
-            }
-            return null;
+                  ...agendamentos.map((agendamento) {
+                    return GestureDetector(
+                      onTap: () {
+                        _mostrarDetalhesAgendamento(context, agendamento);
+                      },
+                      child: Container(
+                        margin: const EdgeInsets.only(top: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 4,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _corPorStatus(agendamento['status']),
+                          borderRadius: BorderRadius.circular(6),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Colors.black26,
+                              blurRadius: 2,
+                              offset: Offset(1, 1),
+                            ),
+                          ],
+                        ),
+                        child: Text(
+                          agendamento['descricao'] ?? 'Agendamento',
+                          style: const TextStyle(
+                            fontSize: 9,
+                            color: Colors.white,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ],
+              ),
+            );
           },
         ),
-      );
+      ),
+    );
+  }
+
+  /// Retorna cor diferente por status
+  Color _corPorStatus(String? status) {
+    switch (status?.toLowerCase()) {
+      case 'concluido':
+        return Colors.green;
+      case 'confirmado':
+        return Colors.amber.shade700;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  /// Mostra modal com mais detalhes do agendamento
+  void _mostrarDetalhesAgendamento(
+    BuildContext context,
+    Map<String, dynamic> agendamento,
+  ) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Detalhes do Agendamento'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text("Descrição: ${agendamento['descricao'] ?? 'N/A'}"),
+              const SizedBox(height: 8),
+              Text("Usuário: ${agendamento['usuario'] ?? 'N/A'}"),
+              const SizedBox(height: 8),
+              Text("Status: ${agendamento['status'] ?? 'N/A'}"),
+              const SizedBox(height: 8),
+              Text("Destino: ${agendamento['destino'] ?? 'N/A'}"),
+              const SizedBox(height: 8),
+              Text("Data: ${_formatarData(agendamento['dataViagem'])}"),
+            ],
+          ),
+          actions: [
+            TextButton(
+              child: const Text('Fechar'),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  String _formatarData(Timestamp? timestamp) {
+    if (timestamp == null) return 'Sem data';
+    final data = timestamp.toDate();
+    return '${data.day.toString().padLeft(2, '0')}/${data.month.toString().padLeft(2, '0')}/${data.year}';
   }
 }

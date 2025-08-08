@@ -14,6 +14,7 @@ class CalendarPage extends StatelessWidget {
       body: Padding(
         padding: const EdgeInsets.all(8.0),
         child: SfCalendar(
+          locale: const Locale('pt', 'BR'),
           view: CalendarView.month,
           dataSource: _getCalendarDataSource(),
           headerStyle: CalendarHeaderStyle(

@@ -39,6 +39,7 @@ dependencies:
   flutter_form_builder: ^10.1.0
   pdf: ^3.11.3
   printing: ^5.14.2
+  syncfusion_localizations: ^30.2.4
 
 dev_dependencies:
   flutter_test:
