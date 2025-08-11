@@ -130,7 +130,7 @@ class GerenciarCalendarioPageState extends State<GerenciarCalendarioPage> {
                         ),
                       ),
                     );
-                  }).toList(),
+                  })
                 ],
               ),
             );
