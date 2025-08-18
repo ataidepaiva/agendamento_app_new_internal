@@ -1,0 +1,12 @@
+$origem = "C:\Users\SEEMG\Desktop\ATAIDE\MUNICIPIOS"  # Pasta raiz onde estão as subpastas
+$destino = "C:\Users\SEEMG\Desktop\TodosOsArquivos"  # Pasta onde quer reunir tudo
+
+# Cria a pasta de destino se ela não existir
+if (!(Test-Path -Path $destino)) {
+    New-Item -ItemType Directory -Path $destino
+}
+
+# Copia todos os arquivos (sem subpastas)
+Get-ChildItem -Path $origem -Recurse -File | ForEach-Object {
+    Copy-Item -Path $_.FullName -Destination $destino -Force
+}
