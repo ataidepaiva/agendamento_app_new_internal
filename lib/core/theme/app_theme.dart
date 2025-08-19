@@ -89,7 +89,7 @@ final ThemeData appTheme = ThemeData(
   cardTheme: CardThemeData(
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
     elevation: 1,
-    shadowColor: Colors.grey.shade200,
+    shadowColor: const Color(0xFFEEEEEE),
     margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 0),
   ),
   iconTheme: const IconThemeData(color: Color(0xFF005A9C)),

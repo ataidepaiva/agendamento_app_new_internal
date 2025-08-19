@@ -4,6 +4,8 @@ import 'package:agendamento_app/pages/admin/admin_home_content_page.dart';
 import 'package:agendamento_app/pages/admin/gerenciar_page.dart';
 import 'package:agendamento_app/pages/admin/visualizar_page.dart';
 import 'package:agendamento_app/pages/admin/gerenciar_agendamentos_page.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:go_router/go_router.dart';
 
 class AdminDashboardPage extends StatefulWidget {
   const AdminDashboardPage({super.key});
@@ -43,6 +45,26 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       appBar: AppBar(
         title: Text(_widgetTitles.elementAt(_selectedIndex)),
         backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+        actions: [
+          TextButton.icon(
+            icon: const Icon(Icons.logout, color: Colors.white),
+            label: const Text('Sair', style: TextStyle(color: Colors.white)),
+            onPressed: () async {
+              final router = GoRouter.of(context);
+              await FirebaseAuth.instance.signOut();
+              if (mounted) {
+                router.go('/login');
+              }
+            },
+            style: TextButton.styleFrom(
+              backgroundColor: Colors.red, // Highlight with red background
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ),
+        ],
       ),
       body: IndexedStack(
         index: _selectedIndex,

@@ -14,7 +14,6 @@ class _GerenciarCalendarioPageState extends State<GerenciarCalendarioPage> {
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
   Map<DateTime, List<Map<String, dynamic>>> _agendamentosPorDia = {};
-  Map<DateTime, bool> _postItExpandidoPorDia = {};
 
   @override
   void initState() {
@@ -69,16 +68,7 @@ class _GerenciarCalendarioPageState extends State<GerenciarCalendarioPage> {
         [];
   }
 
-  Color _corPostItPorStatus(String? status) {
-    switch (status?.toLowerCase()) {
-      case 'concluido':
-        return const Color(0xFFFFF59D);
-      case 'confirmado':
-        return const Color(0xFFB2EBF2);
-      default:
-        return const Color(0xFFFFCCBC);
-    }
-  }
+  
 
   String _formatarDataHora(Timestamp? timestamp) {
     if (timestamp == null) return 'Sem data';
@@ -149,128 +139,22 @@ class _GerenciarCalendarioPageState extends State<GerenciarCalendarioPage> {
             _selectedDay = selectedDay;
             _focusedDay = focusedDay;
           });
+          final agendamentos = _getAgendamentosParaDia(selectedDay);
+          if (agendamentos.isNotEmpty) {
+            _mostrarListaDetalhes(context, agendamentos);
+          }
         },
         eventLoader: _getAgendamentosParaDia,
-        calendarStyle: const CalendarStyle(outsideDaysVisible: false),
+        calendarStyle: const CalendarStyle(
+          outsideDaysVisible: false,
+          markerDecoration: BoxDecoration(
+            color: Color(0xFFFFCDD2),
+            shape: BoxShape.circle,
+          ),
+        ),
         headerStyle: const HeaderStyle(
           formatButtonVisible: false,
           titleCentered: true,
-        ),
-        calendarBuilders: CalendarBuilders(
-          defaultBuilder: (context, day, focusedDay) {
-            final agendamentos = _getAgendamentosParaDia(day);
-            final diaUtc = DateTime.utc(day.year, day.month, day.day);
-            final expandido = _postItExpandidoPorDia[diaUtc] ?? false;
-
-            if (agendamentos.isEmpty) {
-              return Center(
-                child: Text(
-                  '${day.day}',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-              );
-            }
-
-            return Container(
-              padding: const EdgeInsets.all(4),
-              child: Column(
-                children: [
-                  Text(
-                    '${day.day}',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _postItExpandidoPorDia[diaUtc] = !expandido;
-                      });
-                    },
-                    onLongPress: () {
-                      _mostrarListaDetalhes(context, agendamentos);
-                    },
-                    child: Transform.rotate(
-                      angle: (day.day % 2 == 0 ? -0.07 : 0.07),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeInOut,
-                        width: double.infinity,
-                        height: expandido ? 100 : 50,
-                        decoration: BoxDecoration(
-                          color: _corPostItPorStatus(
-                            agendamentos.first['status'],
-                          ),
-                          borderRadius: BorderRadius.circular(8),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Colors.black26,
-                              blurRadius: 4,
-                              offset: Offset(2, 2),
-                            ),
-                          ],
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 4,
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                const Icon(
-                                  Icons.event_note,
-                                  size: 16,
-                                  color: Colors.black87,
-                                ),
-                                const SizedBox(width: 4),
-                                Expanded(
-                                  child: Text(
-                                    agendamentos.length > 1
-                                        ? "${agendamentos.length} agendamentos"
-                                        : agendamentos.first['descricao'] ??
-                                              'Agendamento',
-                                    style: const TextStyle(
-                                      fontSize: 10,
-                                      fontFamily: 'PatrickHand',
-                                      color: Colors.black87,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            if (expandido)
-                              ...agendamentos.map(
-                                (a) => Padding(
-                                  padding: const EdgeInsets.only(top: 2),
-                                  child: Row(
-                                    children: [
-                                      const Icon(
-                                        Icons.location_on,
-                                        size: 12,
-                                        color: Colors.black54,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Expanded(
-                                        child: Text(
-                                          "Destino: ${a['destino'] ?? 'N/A'}",
-                                          style: const TextStyle(fontSize: 9),
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
         ),
       ),
     );

@@ -1,4 +1,6 @@
-import 'dart:io' show Platform;
+
+
+
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -126,29 +128,12 @@ class _AdminTablePageState extends State<AdminTablePage> {
     });
 
     try {
-      List<QuerySnapshot> results;
-
-      if (!kIsWeb && Platform.isWindows) {
-        // Windows: Carrega todas as coleções
-        results = await Future.wait([
-          FirebaseFirestore.instance.collection('agendamentos').get(),
-          FirebaseFirestore.instance.collection('usuarios').get(),
-          FirebaseFirestore.instance.collection('motoristas').get(),
-          FirebaseFirestore.instance.collection('veiculos').get(),
-          // Adicione outras coleções aqui, se necessário
-        ]);
-      } else {
-        // Outras plataformas: Carrega apenas a coleção de agendamentos
-        results = await Future.wait([
-          FirebaseFirestore.instance
-              .collection('agendamentos')
-              .orderBy('dataViagem', descending: true)
-              .get(),
-          FirebaseFirestore.instance.collection('usuarios').get(),
-          FirebaseFirestore.instance.collection('motoristas').get(),
-          FirebaseFirestore.instance.collection('veiculos').get(),
-        ]);
-      }
+      final results = await Future.wait([
+        FirebaseFirestore.instance.collection('agendamentos').get(),
+        FirebaseFirestore.instance.collection('usuarios').get(),
+        FirebaseFirestore.instance.collection('motoristas').get(),
+        FirebaseFirestore.instance.collection('veiculos').get(),
+      ]);
 
       final agendamentosSnap = results[0];
       final usuariosSnap = results[1];
@@ -398,11 +383,10 @@ class _AdminTablePageState extends State<AdminTablePage> {
             return DataRow(
               cells: _filterControllers.keys.map((key) {
                 dynamic value = rowData.get(key);
-                String text = value?.toString() ?? 'N/A';
                 if (key == 'Data Viagem' && value is Timestamp) {
-                  text = DateFormat('dd/MM/yyyy').format(value.toDate());
+                  return DataCell(Text(DateFormat('dd/MM/yyyy').format(value.toDate())));
                 }
-                return DataCell(Text(text));
+                return DataCell(Text(value?.toString() ?? 'N/A'));
               }).toList(),
             );
           }).toList(),

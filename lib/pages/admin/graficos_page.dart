@@ -76,22 +76,6 @@ class _GraficosPageState extends State<GraficosPage> {
     Colors.brown,
   ];
 
-  List<PieChartSectionData> _buildSections(Map<String, int> dataMap) {
-    final total = dataMap.values.fold<int>(0, (prev, val) => prev + val);
-    int colorIndex = 0;
-    return dataMap.entries.map((entry) {
-      final value = entry.value.toDouble();
-      final section = PieChartSectionData(
-        color: chartColors[colorIndex % chartColors.length],
-        value: value,
-        title: '',
-        radius: 60,
-      );
-      colorIndex++;
-      return section;
-    }).toList();
-  }
-
   Widget _buildPieChartComLegendaLateral(
     String title,
     Map<String, int> dataMap, {
@@ -102,9 +86,9 @@ class _GraficosPageState extends State<GraficosPage> {
     }
 
     final displayMap = <String, int>{};
-    dataMap.forEach((id, count) {
+    dataMap.forEach((id, valor) {
       final nome = nomeMap?[id] ?? id;
-      displayMap[nome] = count;
+      displayMap[nome] = valor;
     });
 
     final total = displayMap.values.fold<int>(0, (prev, val) => prev + val);

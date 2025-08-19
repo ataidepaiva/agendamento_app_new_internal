@@ -18,6 +18,7 @@ class _MeusAgendamentosPageState extends State<MeusAgendamentosPage> {
   Widget build(BuildContext context) {
     final usuario = _auth.currentUser;
     if (usuario == null) {
+      debugPrint('🔴 Usuário não autenticado.');
       return const Scaffold(
         body: Center(child: Text("Usuário não autenticado")),
       );
@@ -54,6 +55,9 @@ class _MeusAgendamentosPageState extends State<MeusAgendamentosPage> {
           }
 
           final docs = snapshot.data!.docs;
+          debugPrint(
+            '✅ Agendamentos encontrados: ${docs.length} para UID: ${usuario.uid}',
+          );
 
           return ListView.separated(
             padding: const EdgeInsets.all(16),
@@ -66,7 +70,7 @@ class _MeusAgendamentosPageState extends State<MeusAgendamentosPage> {
                     agendamento['dataHoraViagem'] as Timestamp?;
                 final data = dataTimestamp?.toDate();
                 final status = agendamento['status'] ?? 'pendente';
-                final rotaId = (agendamento.data() as Map<String, dynamic>)['rotaId'] ?? '';
+                final rotaId = agendamento['rotaId'] ?? '';
 
                 if (data == null) {
                   debugPrint(
@@ -84,16 +88,20 @@ class _MeusAgendamentosPageState extends State<MeusAgendamentosPage> {
                       .doc(rotaId)
                       .get(),
                   builder: (context, rotaSnapshot) {
-                    String destino = 'Destino não encontrado';
+                    String destino = 'Destino não disponível';
                     String obs = '';
 
-                    if (rotaSnapshot.hasData && rotaSnapshot.data!.exists) {
-                      final rotaData =
-                          rotaSnapshot.data!.data() as Map<String, dynamic>;
-                      destino = rotaData['destino'] ?? destino;
-                      obs = rotaData['obs'] ?? '';
-                    } else {
-                      debugPrint('⚠️ Rota não encontrada para rotaId: $rotaId');
+                    if (rotaSnapshot.connectionState == ConnectionState.done) {
+                      if (rotaSnapshot.hasData && rotaSnapshot.data!.exists) {
+                        final rotaData =
+                            rotaSnapshot.data!.data() as Map<String, dynamic>;
+                        destino = rotaData['destino'] ?? destino;
+                        obs = rotaData['obs'] ?? '';
+                      } else {
+                        debugPrint(
+                          '⚠️ Rota não encontrada ou sem permissão para rotaId: $rotaId',
+                        );
+                      }
                     }
 
                     return Card(
