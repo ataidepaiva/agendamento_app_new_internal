@@ -15,9 +15,7 @@ class AdminDashboardPage extends StatefulWidget {
 }
 
 class _AdminDashboardPageState extends State<AdminDashboardPage> {
-  int _selectedIndex = 0;
-
-  static final List<Widget> _widgetOptions = <Widget>[
+  final List<Widget> _widgetOptions = <Widget>[
     const AdminHomeContentPage(),
     const GerenciarAgendamentosPage(),
     const AdminTablePage(),
@@ -25,76 +23,63 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     const GerenciarPage(),
   ];
 
-  static const List<String> _widgetTitles = <String>[
-    'Painel Administrativo',
-    'Gerenciar Agendamentos',
-    'Tabela de Agendamentos',
-    'Visualizar',
-    'Gerenciar',
-  ];
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_widgetTitles.elementAt(_selectedIndex)),
-        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-        actions: [
-          TextButton.icon(
-            icon: const Icon(Icons.logout, color: Colors.white),
-            label: const Text('Sair', style: TextStyle(color: Colors.white)),
-            onPressed: () async {
-              final router = GoRouter.of(context);
-              await FirebaseAuth.instance.signOut();
-              if (mounted) {
-                router.go('/login');
-              }
-            },
-            style: TextButton.styleFrom(
-              backgroundColor: Colors.red, // Highlight with red background
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+    return DefaultTabController(
+      length: _widgetOptions.length,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Painel Administrativo'),
+          backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+          actions: [
+            TextButton.icon(
+              icon: const Icon(Icons.logout, color: Colors.white),
+              label: const Text('Sair', style: TextStyle(color: Colors.white)),
+              onPressed: () async {
+                final router = GoRouter.of(context);
+                await FirebaseAuth.instance.signOut();
+                if (mounted) {
+                  router.go('/login');
+                }
+              },
+              style: TextButton.styleFrom(
+                backgroundColor: Colors.red, // Highlight with red background
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
             ),
+          ],
+          bottom: const TabBar(
+            tabs: <Widget>[
+              Tab(
+                icon: Icon(Icons.home),
+                text: 'Home',
+              ),
+              Tab(
+                icon: Icon(Icons.list_alt),
+                text: 'Agendamentos',
+              ),
+              Tab(
+                icon: Icon(Icons.table_chart),
+                text: 'Tabela',
+              ),
+              Tab(
+                icon: Icon(Icons.visibility),
+                text: 'Visualizar',
+              ),
+              Tab(
+                icon: Icon(Icons.manage_accounts),
+                text: 'Gerenciar',
+              ),
+            ],
           ),
-        ],
-      ),
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: _widgetOptions,
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.list_alt),
-            label: 'Agendamentos',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.table_chart),
-            label: 'Tabela',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.visibility),
-            label: 'Visualizar',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.manage_accounts),
-            label: 'Gerenciar',
-          ),
-        ],
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
+        ),
+        body: TabBarView(
+          children: _widgetOptions,
+        ),
       ),
     );
   }

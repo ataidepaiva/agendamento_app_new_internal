@@ -9,25 +9,51 @@ class VisualizarPage extends StatefulWidget {
   State<VisualizarPage> createState() => _VisualizarPageState();
 }
 
-class _VisualizarPageState extends State<VisualizarPage> {
+class _VisualizarPageState extends State<VisualizarPage>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 2, // Número de abas (Calendário e Gráficos)
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text(''),
-          backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-          bottom: const TabBar(
-            tabs: [
+    return Scaffold(
+      body: Column(
+        children: [
+          TabBar(
+            controller: _tabController,
+            indicator: BoxDecoration(
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(10),
+                topRight: Radius.circular(10),
+              ),
+              color: Theme.of(context).colorScheme.surface,
+            ),
+            tabs: const [
               Tab(text: 'Calendário', icon: Icon(Icons.calendar_today)),
               Tab(text: 'Gráficos', icon: Icon(Icons.bar_chart)),
             ],
           ),
-        ),
-        body: const TabBarView(
-          children: [GerenciarCalendarioPage(), GraficosPage()],
-        ),
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: const [
+                GerenciarCalendarioPage(),
+                GraficosPage(),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
