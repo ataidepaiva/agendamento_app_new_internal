@@ -154,6 +154,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                       const SizedBox(height: 28),
                       TextFormField(
                         controller: _emailCtrl,
+                        autofillHints: const [],
                         decoration: InputDecoration(
                           labelText: 'E-mail institucional',
                           prefixIcon: const Icon(

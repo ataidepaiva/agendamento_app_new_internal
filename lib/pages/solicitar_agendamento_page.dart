@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:intl/intl.dart';
+import 'package:agendamento_app/pages/home_page.dart';
 
 class SolicitarAgendamentoPage extends StatefulWidget {
   const SolicitarAgendamentoPage({super.key});
@@ -24,7 +25,7 @@ class _SolicitarAgendamentoPageState extends State<SolicitarAgendamentoPage> {
   final Map<String, Set<String>> _escolasSelecionadasPorMunicipio = {};
 
   bool _carregando = false;
-  String _mensagem = '';
+  String? _escolaErrorMessage;
 
   @override
   void initState() {
@@ -45,9 +46,10 @@ class _SolicitarAgendamentoPageState extends State<SolicitarAgendamentoPage> {
         _municipiosSelecionados = mapa;
       });
     } catch (e) {
-      setState(() {
-        _mensagem = 'Erro ao carregar municípios.';
-      });
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Erro ao carregar municípios.')),
+      );
     }
   }
 
@@ -65,46 +67,92 @@ class _SolicitarAgendamentoPageState extends State<SolicitarAgendamentoPage> {
         _escolasSelecionadasPorMunicipio[municipio] = {};
       });
     } catch (e) {
-      setState(() {
-        _mensagem = 'Erro ao carregar escolas de $municipio.';
-      });
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro ao carregar escolas de $municipio.')),
+      );
     }
+  }
+
+  bool _ehDiaUtil(DateTime dia) {
+    if (dia.weekday == DateTime.saturday || dia.weekday == DateTime.sunday) {
+      return false;
+    }
+    return true;
+  }
+
+  Future<void> _selecionarData(BuildContext context) async {
+    final hoje = DateTime.now();
+    var dataInicial = hoje.add(const Duration(days: 1));
+    while (!_ehDiaUtil(dataInicial)) {
+      dataInicial = dataInicial.add(const Duration(days: 1));
+    }
+
+    final dataSelecionada = await showDatePicker(
+      context: context,
+      initialDate: dataInicial,
+      firstDate: dataInicial,
+      lastDate: DateTime(hoje.year + 1, hoje.month, hoje.day),
+      locale: const Locale('pt', 'BR'),
+      selectableDayPredicate: _ehDiaUtil,
+    );
+
+    if (dataSelecionada != null) {
+      final formatter = DateFormat('dd/MM/yyyy');
+      _dataCtrl.text = formatter.format(dataSelecionada);
+    }
+  }
+
+  Future<void> _showSuccessDialog() async {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false, // user must tap button!
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Sucesso!'),
+          content: const SingleChildScrollView(
+            child: ListBody(
+              children: <Widget>[
+                Text('Agendamento requerido com sucesso!'),
+                Text('Aguarde confirmação na página "MEUS AGENDAMENTOS".'),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('OK'),
+              onPressed: () {
+                Navigator.of(context).pop(); // Explicitly pop the dialog
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (context) => const HomePage()),
+                    (Route<dynamic> route) => false,
+                  );
+                });
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Future<void> _solicitarAgendamento() async {
     final user = _auth.currentUser;
 
     if (user == null) {
-      setState(() => _mensagem = 'Usuário não autenticado.');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Usuário não autenticado.')),
+      );
       return;
     }
 
-    if (!_formKey.currentState!.validate()) return;
-
-    final dataTexto = _dataCtrl.text.trim();
-    final descricao = _descricaoCtrl.text.trim();
-
-    final partes = dataTexto.split('/');
-    if (partes.length != 3) {
-      setState(() => _mensagem = 'Data inválida');
-      return;
-    }
-
-    final dia = int.parse(partes[0]);
-    final mes = int.parse(partes[1]);
-    final ano = int.parse(partes[2]);
-
-    final dataTimestamp = Timestamp.fromDate(DateTime(ano, mes, dia));
-
-    // Monta as listas finais de envio
-    final List<String> municipiosSelecionados = [];
     final List<Map<String, dynamic>> escolasSelecionadas = [];
-
     _municipiosSelecionados.forEach((municipio, marcado) {
       if (marcado) {
         final escolas = _escolasSelecionadasPorMunicipio[municipio] ?? {};
         if (escolas.isNotEmpty) {
-          municipiosSelecionados.add(municipio);
           escolasSelecionadas.add({
             'municipio': municipio,
             'escolas': escolas.toList(),
@@ -114,36 +162,52 @@ class _SolicitarAgendamentoPageState extends State<SolicitarAgendamentoPage> {
     });
 
     if (escolasSelecionadas.isEmpty) {
-      setState(() => _mensagem = 'Selecione ao menos uma escola.');
+      setState(() {
+        _escolaErrorMessage = 'Selecione ao menos uma escola.';
+      });
+    } else {
+      setState(() {
+        _escolaErrorMessage = null;
+      });
+    }
+
+    if (!_formKey.currentState!.validate() || escolasSelecionadas.isEmpty) {
       return;
     }
 
     setState(() {
       _carregando = true;
-      _mensagem = '';
     });
 
     try {
+      final dataTexto = _dataCtrl.text.trim();
+      final dataTimestamp =
+          Timestamp.fromDate(DateFormat('dd/MM/yyyy').parse(dataTexto));
+
       await _firestore.collection('agendamentos').add({
         'solicitanteId': user.uid,
         'dataViagem': dataTimestamp,
-        'descricao': descricao,
+        'descricao': _descricaoCtrl.text.trim(),
         'locais': escolasSelecionadas,
         'status': 'pendente',
         'criadoEm': FieldValue.serverTimestamp(),
       });
 
       setState(() {
-        _mensagem = 'Agendamento solicitado com sucesso!';
         _dataCtrl.clear();
         _descricaoCtrl.clear();
         _municipiosSelecionados.updateAll((key, value) => false);
         _escolasSelecionadasPorMunicipio.clear();
+        _formKey.currentState?.reset();
       });
+
+      if (!mounted) return;
+      await _showSuccessDialog();
     } catch (e) {
-      setState(() {
-        _mensagem = 'Erro ao solicitar agendamento.';
-      });
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Erro ao solicitar agendamento.')),
+      );
     } finally {
       setState(() {
         _carregando = false;
@@ -170,17 +234,20 @@ class _SolicitarAgendamentoPageState extends State<SolicitarAgendamentoPage> {
             children: [
               TextFormField(
                 controller: _dataCtrl,
+                readOnly: true,
                 decoration: const InputDecoration(
-                  labelText: 'Data da Viagem (dd/MM/aaaa)',
+                  labelText: 'Data da Viagem',
+                  hintText: 'Clique para selecionar a data',
                   border: OutlineInputBorder(),
+                  suffixIcon: Icon(Icons.calendar_today),
                 ),
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
-                  _DataInputFormatter(),
-                ],
-                keyboardType: TextInputType.number,
-                validator: (val) =>
-                    val == null || val.isEmpty ? 'Informe a data' : null,
+                onTap: () => _selecionarData(context),
+                validator: (val) {
+                  if (val == null || val.isEmpty) {
+                    return 'Selecione a data da viagem';
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 16),
               const Text('Selecione os municípios e escolas:'),
@@ -234,6 +301,17 @@ class _SolicitarAgendamentoPageState extends State<SolicitarAgendamentoPage> {
                   ],
                 );
               }),
+              if (_escolaErrorMessage != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8.0, left: 12.0),
+                  child: Text(
+                    _escolaErrorMessage!,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _descricaoCtrl,
@@ -242,6 +320,8 @@ class _SolicitarAgendamentoPageState extends State<SolicitarAgendamentoPage> {
                   border: OutlineInputBorder(),
                 ),
                 maxLines: 3,
+                validator: (val) =>
+                    val == null || val.isEmpty ? 'Informe a descrição' : null,
               ),
               const SizedBox(height: 20),
               _carregando
@@ -250,45 +330,10 @@ class _SolicitarAgendamentoPageState extends State<SolicitarAgendamentoPage> {
                       onPressed: _solicitarAgendamento,
                       child: const Text('Solicitar'),
                     ),
-              const SizedBox(height: 12),
-              if (_mensagem.isNotEmpty)
-                Text(
-                  _mensagem,
-                  style: TextStyle(
-                    color: _mensagem.contains('sucesso')
-                        ? Colors.green
-                        : Colors.red,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
             ],
           ),
         ),
       ),
-    );
-  }
-}
-
-class _DataInputFormatter extends TextInputFormatter {
-  @override
-  TextEditingValue formatEditUpdate(
-    TextEditingValue oldValue,
-    TextEditingValue newValue,
-  ) {
-    var text = newValue.text;
-    if (text.length > 10) return oldValue;
-    text = text.replaceAll(RegExp(r'[^0-9]'), '');
-    final buffer = StringBuffer();
-    for (int i = 0; i < text.length; i++) {
-      buffer.write(text[i]);
-      if ((i == 1 || i == 3) && i != text.length - 1) {
-        buffer.write('/');
-      }
-    }
-    final formatted = buffer.toString();
-    return TextEditingValue(
-      text: formatted,
-      selection: TextSelection.collapsed(offset: formatted.length),
     );
   }
 }

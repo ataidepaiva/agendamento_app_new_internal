@@ -13,6 +13,7 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final _maspController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _passwordFocusNode = FocusNode();
   String _erro = '';
   bool _isLoading = false;
 
@@ -124,6 +125,7 @@ class _LoginPageState extends State<LoginPage> {
   void dispose() {
     _maspController.dispose();
     _passwordController.dispose();
+    _passwordFocusNode.dispose();
     super.dispose();
   }
 
@@ -207,6 +209,7 @@ class _LoginPageState extends State<LoginPage> {
                             const SizedBox(height: 20),
                             TextField(
                               controller: _maspController,
+                              autofocus: true,
                               decoration: InputDecoration(
                                 labelText: 'Número do MASP',
                                 prefixIcon: const Icon(Icons.badge),
@@ -217,6 +220,11 @@ class _LoginPageState extends State<LoginPage> {
                                 fillColor: Colors.grey[50],
                               ),
                               keyboardType: TextInputType.number,
+                              textInputAction: TextInputAction.next,
+                              onSubmitted: (_) {
+                                FocusScope.of(context)
+                                    .requestFocus(_passwordFocusNode);
+                              },
                               onChanged: (_) {
                                 if (_erro.isNotEmpty) {
                                   setState(() => _erro = '');
@@ -226,6 +234,8 @@ class _LoginPageState extends State<LoginPage> {
                             const SizedBox(height: 15),
                             TextField(
                               controller: _passwordController,
+                              focusNode: _passwordFocusNode,
+                              autofillHints: const [],
                               decoration: InputDecoration(
                                 labelText: 'Senha',
                                 prefixIcon: const Icon(Icons.lock),

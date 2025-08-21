@@ -282,6 +282,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: _senhaCtrl,
+                        autofillHints: const [],
                         decoration: _inputDecorationSenha(
                           'Senha',
                           _mostrarSenha,
@@ -304,6 +305,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: _senhaConfirmCtrl,
+                        autofillHints: const [],
                         decoration: _inputDecorationSenha(
                           'Repita a senha',
                           _mostrarConfirmSenha,
